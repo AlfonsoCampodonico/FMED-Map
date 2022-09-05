@@ -182,6 +182,7 @@ const useGraph = (loginHook) => {
       fields: ["id", "cuatrimestre"],
     }).map((n) => getNode(n.id).cursando(undefined)));
     actualizar();
+    actualizarNiveles()
   };
 
   const changeCarrera = async (id) => {
@@ -357,6 +358,11 @@ const useGraph = (loginHook) => {
           fields: ["creditos"],
         })
         .reduce(accumulator, 0),
+      nmaterias: nodes.get({
+        filter: (n) =>
+          n.categoria === "*CBC",
+        fields: ["creditos"],
+      }).length,
     });
 
     creditos.push({
@@ -384,8 +390,7 @@ const useGraph = (loginHook) => {
     });
 
     creditos.push({
-      nombre: `Materias Electivas${user.finDeCarrera ? ` (eligiendo ${user.finDeCarrera.id})` : ""
-        }`,
+      nombre: "Materias Electivas",
       nombrecorto: "Electivas",
       color: "electivas",
       bg: COLORS.electivas[50],
@@ -657,7 +662,9 @@ const useGraph = (loginHook) => {
         "Materias Electivas",
         ...graph.groups,
       ];
-
+      if (nodeA.creditos && nodeB.creditos && nodeA.group === nodeB.group) {
+        return nodeB.creditos - nodeA.creditos;
+      }
       return groupOrder.indexOf(nodeA.group) - groupOrder.indexOf(nodeB.group);
     };
 
