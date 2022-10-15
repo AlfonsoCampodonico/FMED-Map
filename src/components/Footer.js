@@ -9,7 +9,6 @@ import {
   Box,
   Checkbox,
   Collapse,
-  Divider,
   Editable,
   EditableInput,
   EditablePreview,
@@ -34,11 +33,11 @@ import {
   PopoverTrigger,
   Progress,
   Stat,
+  StatHelpText,
   StatLabel,
   StatNumber,
   Text,
   Tooltip,
-  useColorMode,
   useColorModeValue,
   useEditableControls,
 } from "@chakra-ui/react";
@@ -48,7 +47,6 @@ import useWindowSize from "./useWindowSize";
 
 const Footer = () => {
   const { logged, user } = React.useContext(UserContext);
-  const { colorMode } = useColorMode();
   const {
     promedio,
     creditos,
@@ -74,7 +72,7 @@ const Footer = () => {
     const { defaultValue, optativa } = props;
     return (
       <>
-        <Tooltip placement="bottom" label="Créditos">
+        <Tooltip placement="top" label="Créditos" hasArrow>
           <NumberInput
             mr={1}
             borderRadius={5}
@@ -99,30 +97,25 @@ const Footer = () => {
         </Tooltip>
 
         {isEditing ? (
-          <>
+          <Tooltip placement="top" label="Confirmar" hasArrow>
+
             <IconButton
               size="sm"
               icon={<CheckIcon />}
               {...getSubmitButtonProps()}
             />
-          </>
+          </Tooltip>
         ) : (
-          <IconButton size="sm" icon={<EditIcon />} {...getEditButtonProps()} />
+            <Tooltip placement="top" label="Editar" hasArrow>
+              <IconButton size="sm" icon={<EditIcon />} {...getEditButtonProps()} />
+            </Tooltip>
         )}
 
-        {isEditing && (
-          <SmallCloseIcon
-            cursor="pointer"
-            color="gray.600"
-            my="auto"
-            ml="0"
-            mr="-15px"
-            _hover={{ color: "black" }}
-            onClick={() => {
-              removeOptativa(optativa.id);
-            }}
-          />
-        )}
+        {!isEditing && <Tooltip placement="top" label="Eliminar" hasArrow>
+          <IconButton mx={1} onClick={() => {
+            removeOptativa(optativa.id);
+          }} icon={<SmallCloseIcon />} size="sm" />
+        </Tooltip>}
       </>
     );
   }
@@ -138,9 +131,20 @@ const Footer = () => {
           <Popover placement="top" trigger="hover">
             <LightMode>
               <PopoverTrigger>
-                <Box w="12ch">
+                <Box w="14ch">
                   <Stat p="0.4em" color="white" size="sm">
-                    <StatLabel>Créditos</StatLabel>
+                    <StatLabel>
+                      Créditos
+                      <Badge
+                        ml={"4px"}
+                        colorScheme="green"
+                        variant="outline"
+                      >
+                        {Math.round(
+                          (stats.creditosTotales / user.carrera?.creditos.total) * 100
+                        ) + "%"}
+                      </Badge>
+                    </StatLabel>
                     <StatNumber>
                       {stats.creditosTotales + " de " + user.carrera?.creditos.total}
                     </StatNumber>
@@ -148,28 +152,73 @@ const Footer = () => {
                 </Box>
               </PopoverTrigger>
             </LightMode>
-            <PopoverContent width="fit-content">
-              <PopoverArrow />
-              <PopoverBody>
-                { stats.creditosTotales > 38 &&
-                  <Flex fontSize="md"justifyContent="space-between">
-                    <strong>Carrera</strong>
-                    <Text ml={6} textAlign='right' color={colorMode === "dark" ? "gray.50" : "gray.800"} fontWeight="semibold">
-                      {stats.creditosTotales - 38}/{user.carrera?.creditos.total - 38} ({stats.materiasAprobadas - 6} {(stats.materiasAprobadas - 6) > 1 ? `materias` : `materia`})
-                    </Text>
-                  </Flex>
-                }
-                <Flex fontSize="md" justifyContent="space-between">
-                  <strong>CBC</strong>
-                  <Text ml={6} textAlign='right' color={colorMode === "dark" ? "gray.50" : "gray.800"} fontWeight="semibold">38/38 (6 materias)</Text>
+            <PopoverContent borderColor="electivas.500" width="fit-content">
+              <PopoverArrow bg="electivas.500" />
+              <PopoverHeader border="none">
+                <Flex justifyContent="space-between">
+                  <Tooltip
+                    placement="top"
+                    hasArrow
+                    label={
+                      <>
+                        <Text>Los créditos por fuera del plan contabilizan como materias electivas y no influyen en el promedio.</Text>
+                        <Text>Pueden ser materias optativas (materias dadas en otra facultad o carrera), cursos de posgrado, o créditos otorgados por cualquier otro motivo que la curricular avale.</Text>
+                      </>
+                    }
+                  >
+                    <Text mr={4} alignSelf="center"><strong>Créditos por fuera del plan</strong></Text>
+                  </Tooltip>
+
+                  <Tooltip
+                    placement="top"
+                    hasArrow
+                    label="Agregar créditos"
+                  >
+                    <PlusSquareIcon boxSize={5} alignSelf="center" color={useColorModeValue("electivas.600", "electivas.400")} cursor="pointer" onClick={() => {
+                      addOptativa("Materia Optativa", 4);
+                    }} />
+                  </Tooltip>
                 </Flex>
+
+              </PopoverHeader>
+
+              <PopoverBody>
+                {optativas.length > 0 && (
+                  <>
+                    {optativas.map((o) => (
+                      <Editable
+                        key={o.id}
+                        m={2}
+                        textAlign="left"
+                        defaultValue={o.nombre}
+                        isPreviewFocusable={false}
+                        submitOnBlur={false}
+                        onSubmit={(nombre) =>
+                          editOptativa(o.id, nombre, o.creditos)
+                        }
+                      >
+                        <Flex>
+                          <Tooltip placement="top" label="Motivo" hasArrow>
+                            <EditablePreview width="70%" pl={2} mr={2} />
+                          </Tooltip>
+                          <Tooltip placement="top" label="Motivo" hasArrow>
+                            <EditableInput width="70%" pl={2} mr={2} />
+                          </Tooltip>
+                          <EditableControls
+                            optativa={o}
+                            defaultValue={o.creditos}
+                          />
+                        </Flex>
+                      </Editable>
+                    ))}
+                  </>
+                )}
               </PopoverBody>
             </PopoverContent>
           </Popover>
         </Box>
         <Grid
           flexGrow={1}
-          mx={5}
           columns={creditos.length}
           templateColumns="repeat(10, 1fr)"
         >
@@ -233,14 +282,30 @@ const Footer = () => {
                     </Box>
                   </PopoverTrigger>
                 </LightMode>
-                <PopoverContent>
-                  <PopoverArrow />
+                <PopoverContent borderColor="electivas.500">
+                  <PopoverArrow bg="electivas.500" />
                   <PopoverHeader border="none">
-                    <Text><strong>{c.nombre}</strong></Text>
-                    <Text>{c.nmaterias > 1 && <strong>({c.nmaterias} aprobadas)</strong>}</Text>
+                    <Stat size="sm">
+                      <StatLabel><strong>{c.nombre}</strong></StatLabel>
+                      {!c.checkbox && (
+                        <>
+                          <StatNumber fontWeight="normal" fontSize="larger">{c.creditos}{!!c.creditosNecesarios && ` de ${c.creditosNecesarios} `} créditos</StatNumber>
+                          {!c.creditosNecesarios &&
+                            <StatHelpText fontSize="smaller">
+                              Elegí {user.carrera.eligeOrientaciones && !user.orientacion ? "orientación" : ""}
+                              {user.carrera.eligeOrientaciones && !user.orientacion && !user.finDeCarrera ? " y " : ""}
+                              {!user.finDeCarrera ? "entre tesis y tpp" : ""} para saber cuantos necesitás.
+                            </StatHelpText>
+                          }
+                          <>
+                            {!!c.nmaterias && <StatHelpText fontSize="smaller">({c.nmaterias} {c.nmaterias === 1 ? 'materia aprobada' : 'materias aprobadas'})</StatHelpText>}
+                          </>
+                        </>
+                      )}
+                    </Stat>
                   </PopoverHeader>
-                  <PopoverBody>
-                    {c.checkbox ? (
+                  {!!c.checkbox && (
+                    <PopoverBody>
                       <LightMode>
                         <Checkbox
                           isIndeterminate={!!!c.check}
@@ -254,67 +319,7 @@ const Footer = () => {
                           Marcar como completo
                         </Checkbox>
                       </LightMode>
-                    ) : c.creditosNecesarios ? (
-                      `${c.creditos} de ${c.creditosNecesarios} créditos necesarios`
-                    ) : (
-                      `Tenés ${c.creditos} créditos.
-                      Elegí ${user.carrera.eligeOrientaciones &&
-                        !user.orientacion
-                        ? "orientación"
-                        : ""
-                      }${user.carrera.eligeOrientaciones &&
-                        !user.orientacion &&
-                        !user.finDeCarrera
-                        ? " y "
-                        : ""
-                      }${!user.finDeCarrera ? "entre tesis y tpp" : ""
-                      } para saber cuantos necesitás`
-                    )}
-                    {c.nombre.includes("Materias Electivas") &&
-                      optativas.length > 0 && (
-                        <>
-                          <Divider mt={3} />
-                          {optativas.map((o) => (
-                            <Editable
-                              key={o.id}
-                              m={2}
-                              textAlign="left"
-                              defaultValue={o.nombre}
-                              isPreviewFocusable={false}
-                              submitOnBlur={false}
-                              onSubmit={(nombre) =>
-                                editOptativa(o.id, nombre, o.creditos)
-                              }
-                            >
-                              <Flex>
-                                <EditablePreview width="70%" pl={2} mr={2} />
-                                <EditableInput width="70%" pl={2} mr={2} />
-                                <EditableControls
-                                  optativa={o}
-                                  defaultValue={o.creditos}
-                                />
-                              </Flex>
-                            </Editable>
-                          ))}
-                        </>
-                      )}
-                    {c.nombre.includes("Materias Electivas") && (
-                      <Tooltip
-                        placement="left"
-                        hasArrow
-                        label="Agregar créditos por fuera del plan"
-                      >
-                        <IconButton
-                          onClick={() => {
-                            addOptativa("Materia Optativa", 4);
-                          }}
-                          size="sm"
-                          float="right"
-                          icon={<PlusSquareIcon boxSize={4} />}
-                        />
-                      </Tooltip>
-                    )}
-                  </PopoverBody>
+                    </PopoverBody>)}
                 </PopoverContent>
               </Popover>
             </GridItem>
@@ -332,8 +337,8 @@ const Footer = () => {
               </Box>
             </PopoverTrigger>
           </LightMode>
-          <PopoverContent>
-            <PopoverArrow />
+          <PopoverContent borderColor="electivas.500">
+            <PopoverArrow bg="electivas.500" />
             <PopoverBody>
               <Flex justifyContent="space-between" alignItems="center">
                 <Text fontSize="md">

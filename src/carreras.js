@@ -29,7 +29,7 @@ export const CARRERAS = [
         },
       ],
     },
-  }
+
 ];
 
 export default CARRERAS;
